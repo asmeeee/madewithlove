@@ -1,0 +1,86 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ProductLogType {
+  ADDED_TO_BASKET
+  REMOVED_FROM_BASKET
+}
+
+model ProductsOnBaskets {
+  product   Product @relation(fields: [productId], references: [id])
+  productId Int
+
+  basket   Basket @relation(fields: [basketId], references: [id])
+  basketId Int
+
+  @@id([productId, basketId])
+}
+
+model ProductsOnOrders {
+  product   Product @relation(fields: [productId], references: [id])
+  productId Int
+
+  order   Order @relation(fields: [orderId], references: [id])
+  orderId Int
+
+  @@id([productId, orderId])
+}
+
+model Product {
+  id Int @id @default(autoincrement())
+
+  name  String
+  price Decimal
+
+  baskets ProductsOnBaskets[]
+  orders  ProductsOnOrders[]
+
+  logs ProductLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ProductLog {
+  id Int @id @default(autoincrement())
+
+  user String
+
+  type ProductLogType
+
+  product   Product @relation(fields: [productId], references: [id])
+  productId Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Basket {
+  id Int @id @default(autoincrement())
+
+  user String
+
+  products ProductsOnBaskets[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Order {
+  id Int @id @default(autoincrement())
+
+  user    String
+  address String
+  sum     Decimal
+
+  products ProductsOnOrders[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
