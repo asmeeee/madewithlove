@@ -2,58 +2,48 @@ import {
   MetaFunction,
   ActionFunction,
   LoaderFunction,
-  createCookie,
   useLoaderData,
   json,
   redirect,
   Form,
+  Link,
 } from "remix";
 
 import faker from "faker";
 
-import { Basket, Product, ProductsOnBaskets } from "@prisma/client";
+import { Product } from "@prisma/client";
 
 import { prisma } from "~/services/db.server";
 
+import { userCookie } from "~/services/user";
+
+import { User, BasketWithProducts } from "~/types";
+
 type RouteData = {
-  profile: {
-    name: string;
-    email: string;
-  };
-
-  basket: Basket & {
-    products: (ProductsOnBaskets & {
-      product: Product;
-    })[];
-  };
-
+  user: User;
+  basket: BasketWithProducts;
   products: Product[];
 };
 
-const profileCookie = createCookie("profile", {
-  httpOnly: true,
-  maxAge: 604_800,
-});
-
 export const meta: MetaFunction = () => {
   return {
-    title: "Remix Starter",
-    description: "Welcome to remix!",
+    title: "Our home page",
+    description: "Order something nice",
   };
 };
 
 export const loader: LoaderFunction = async ({ request }) => {
-  const currentProfile =
-    (await profileCookie.parse(request.headers.get("Cookie"))) || {};
+  const existingUser =
+    (await userCookie.parse(request.headers.get("Cookie"))) || {};
 
-  const newProfile =
-    "name" in currentProfile
-      ? { name: currentProfile.name, email: currentProfile.email }
+  const user =
+    "name" in existingUser
+      ? { name: existingUser.name, email: existingUser.email }
       : { name: faker.name.findName(), email: faker.internet.email() };
 
   const basket = await prisma.basket.findFirst({
     where: {
-      user: `${newProfile.name} - ${newProfile.email}`,
+      user: `${user.name} - ${user.email}`,
     },
 
     include: {
@@ -69,22 +59,20 @@ export const loader: LoaderFunction = async ({ request }) => {
 
   return json(
     {
-      profile: newProfile,
-
+      user,
       basket,
       products,
     },
     {
       headers: {
-        "Set-Cookie": await profileCookie.serialize(newProfile),
+        "Set-Cookie": await userCookie.serialize(user),
       },
     }
   );
 };
 
 export const action: ActionFunction = async ({ request }) => {
-  const currentProfile =
-    (await profileCookie.parse(request.headers.get("Cookie"))) || {};
+  const user = (await userCookie.parse(request.headers.get("Cookie"))) || {};
 
   const body = new URLSearchParams(await request.text());
 
@@ -92,7 +80,7 @@ export const action: ActionFunction = async ({ request }) => {
 
   const existingBasket = await prisma.basket.findFirst({
     where: {
-      user: `${currentProfile.name} - ${currentProfile.email}`,
+      user: `${user.name} - ${user.email}`,
     },
 
     include: {
@@ -114,7 +102,7 @@ export const action: ActionFunction = async ({ request }) => {
 
         await prisma.productLog.create({
           data: {
-            user: `${currentProfile.name} - ${currentProfile.email}`,
+            user: `${user.name} - ${user.email}`,
             type: "REMOVED_FROM_BASKET",
             productId: productId,
           },
@@ -140,7 +128,7 @@ export const action: ActionFunction = async ({ request }) => {
       } else {
         await prisma.basket.create({
           data: {
-            user: `${currentProfile.name} - ${currentProfile.email}`,
+            user: `${user.name} - ${user.email}`,
 
             products: {
               create: [
@@ -159,7 +147,7 @@ export const action: ActionFunction = async ({ request }) => {
 
       await prisma.productLog.create({
         data: {
-          user: `${currentProfile.name} - ${currentProfile.email}`,
+          user: `${user.name} - ${user.email}`,
           type: "ADDED_TO_BASKET",
           productId: productId,
         },
@@ -171,8 +159,8 @@ export const action: ActionFunction = async ({ request }) => {
   return redirect("/");
 };
 
-export default function Index() {
-  const { profile, basket, products } = useLoaderData<RouteData>();
+export default function IndexRoute() {
+  const { user, basket, products } = useLoaderData<RouteData>();
 
   const basketSum =
     basket?.products?.reduce(
@@ -184,7 +172,7 @@ export default function Index() {
     <div>
       <header className="flex items-center justify-between">
         <h1>
-          Hey there, {profile.name} - {profile.email}!
+          Hey there, {user.name} - {user.email}!
         </h1>
 
         <div className="dropdown dropdown-end">
@@ -197,13 +185,7 @@ export default function Index() {
             className="menu dropdown-content rounded-box p-2 w-52 bg-base-100 shadow"
           >
             <li>
-              <a>Item 1</a>
-            </li>
-            <li>
-              <a>Item 2</a>
-            </li>
-            <li>
-              <a>Item 3</a>
+              <Link to="/checkout">Checkout</Link>
             </li>
           </ul>
         </div>
