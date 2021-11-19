@@ -7,9 +7,14 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum ProductLogType {
-  ADDED_TO_BASKET
-  REMOVED_FROM_BASKET
+enum BasketStatus {
+  PENDING
+  COMPLETED
+}
+
+enum BasketLogType {
+  PRODUCT_ADDED
+  PRODUCT_REMOVED
 }
 
 model ProductsOnBaskets {
@@ -41,21 +46,7 @@ model Product {
   baskets ProductsOnBaskets[]
   orders  ProductsOnOrders[]
 
-  logs ProductLog[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model ProductLog {
-  id Int @id @default(autoincrement())
-
-  user String
-
-  type ProductLogType
-
-  product   Product @relation(fields: [productId], references: [id])
-  productId Int
+  basketLogs BasketLog[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -67,6 +58,28 @@ model Basket {
   user String
 
   products ProductsOnBaskets[]
+  logs     BasketLog[]
+
+  order Order?
+
+  status BasketStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model BasketLog {
+  id Int @id @default(autoincrement())
+
+  user String
+
+  type BasketLogType
+
+  basket   Basket @relation(fields: [basketId], references: [id])
+  basketId Int
+
+  product   Product @relation(fields: [productId], references: [id])
+  productId Int
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -78,6 +91,9 @@ model Order {
   user    String
   address String
   sum     Decimal
+
+  basket   Basket @relation(fields: [basketId], references: [id])
+  basketId Int    @unique
 
   products ProductsOnOrders[]
 

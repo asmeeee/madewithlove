@@ -44,6 +44,7 @@ export const loader: LoaderFunction = async ({ request }) => {
   const basket = await prisma.basket.findFirst({
     where: {
       user: `${user.name} - ${user.email}`,
+      status: "PENDING",
     },
 
     include: {
@@ -81,6 +82,7 @@ export const action: ActionFunction = async ({ request }) => {
   const existingBasket = await prisma.basket.findFirst({
     where: {
       user: `${user.name} - ${user.email}`,
+      status: "PENDING",
     },
 
     include: {
@@ -100,10 +102,11 @@ export const action: ActionFunction = async ({ request }) => {
           },
         });
 
-        await prisma.productLog.create({
+        await prisma.basketLog.create({
           data: {
             user: `${user.name} - ${user.email}`,
-            type: "REMOVED_FROM_BASKET",
+            type: "PRODUCT_REMOVED",
+            basketId: existingBasket.id,
             productId: productId,
           },
         });
@@ -112,6 +115,8 @@ export const action: ActionFunction = async ({ request }) => {
       break;
 
     case "post":
+      let newBasket;
+
       if (existingBasket) {
         const alreadyInBasket = existingBasket.products.find(
           (productOnBasket) => productOnBasket.productId === productId
@@ -126,7 +131,7 @@ export const action: ActionFunction = async ({ request }) => {
           });
         }
       } else {
-        await prisma.basket.create({
+        newBasket = await prisma.basket.create({
           data: {
             user: `${user.name} - ${user.email}`,
 
@@ -145,13 +150,16 @@ export const action: ActionFunction = async ({ request }) => {
         });
       }
 
-      await prisma.productLog.create({
-        data: {
-          user: `${user.name} - ${user.email}`,
-          type: "ADDED_TO_BASKET",
-          productId: productId,
-        },
-      });
+      if (existingBasket || newBasket) {
+        await prisma.basketLog.create({
+          data: {
+            user: `${user.name} - ${user.email}`,
+            type: "PRODUCT_ADDED",
+            basketId: existingBasket?.id || newBasket?.id || 0,
+            productId: productId,
+          },
+        });
+      }
 
       break;
   }
@@ -175,19 +183,25 @@ export default function IndexRoute() {
           Hey there, {user.name} - {user.email}!
         </h1>
 
-        <div className="dropdown dropdown-end">
-          <div tabIndex={0} className="btn m-1">
-            Your basket ({basket?.products?.length || 0} - ${basketSum})
-          </div>
+        <div className="flex items-center space-x-4">
+          <Link to="/dashboard" className="link">
+            Dashboard
+          </Link>
 
-          <ul
-            tabIndex={0}
-            className="menu dropdown-content rounded-box p-2 w-52 bg-base-100 shadow"
-          >
-            <li>
-              <Link to="/checkout">Checkout</Link>
-            </li>
-          </ul>
+          <div className="dropdown dropdown-end">
+            <div tabIndex={0} className="btn m-1">
+              Your basket ({basket?.products?.length || 0} - ${basketSum})
+            </div>
+
+            <ul
+              tabIndex={0}
+              className="menu dropdown-content rounded-box p-2 w-52 bg-base-100 shadow"
+            >
+              <li>
+                <Link to="/checkout">Checkout</Link>
+              </li>
+            </ul>
+          </div>
         </div>
       </header>
 

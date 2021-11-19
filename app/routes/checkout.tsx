@@ -34,6 +34,7 @@ export const loader: LoaderFunction = async ({ request }) => {
   const basket = await prisma.basket.findFirst({
     where: {
       user: `${user.name} - ${user.email}`,
+      status: "PENDING",
     },
 
     include: {
@@ -67,6 +68,7 @@ export const action: ActionFunction = async ({ request }) => {
   const basket = await prisma.basket.findFirst({
     where: {
       user: `${user.name} - ${user.email}`,
+      status: "PENDING",
     },
 
     include: {
@@ -92,6 +94,7 @@ export const action: ActionFunction = async ({ request }) => {
         user: `${user.name} - ${user.email}`,
         address: body.get("address") as string,
         sum: basketSum,
+        basketId: basket.id,
 
         products: {
           createMany: {
@@ -105,15 +108,14 @@ export const action: ActionFunction = async ({ request }) => {
       },
     });
 
-    await prisma.productsOnBaskets.deleteMany({
-      where: {
-        basketId: basket.id,
-      },
-    });
-
-    await prisma.basket.deleteMany({
+    await prisma.basket.updateMany({
       where: {
         user: `${user.name} - ${user.email}`,
+        status: "PENDING",
+      },
+
+      data: {
+        status: "COMPLETED",
       },
     });
   }
@@ -149,7 +151,7 @@ export default function CheckoutRoute() {
       <div className="divider" />
 
       <div>
-        <h2>You are about to order for a whole lot of ${basketSum}.</h2>
+        <h2>You are about to order for a whole lot of ${basketSum}</h2>
 
         <div className="mt-4 overflow-x-auto">
           <table className="table w-full">
@@ -194,7 +196,9 @@ export default function CheckoutRoute() {
         </fieldset>
 
         <div className="text-center">
-          <button className="btn btn-primary mt-4">Order</button>
+          <button className="btn btn-primary mt-4">
+            Order{isPending && "ing"}
+          </button>
         </div>
       </Form>
     </>
