@@ -178,12 +178,12 @@ export default function IndexRoute() {
 
   return (
     <div>
-      <header className="flex items-center justify-between">
-        <h1>
+      <header className="flex flex-col items-center justify-between space-y-4 md:flex-row md:space-y-0">
+        <h1 className="text-center md:text-left">
           Hey there, {user.name} - {user.email}!
         </h1>
 
-        <div className="flex items-center space-x-4">
+        <div className="flex flex-col items-center space-y-2 md:flex-row md:space-x-4 md:space-y-0">
           <Link to="/dashboard" className="link">
             Dashboard
           </Link>
@@ -207,9 +207,12 @@ export default function IndexRoute() {
 
       <div className="divider" />
 
-      <div className="grid gap-10 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
+      <div className="grid gap-10 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
         {products.map((product) => (
-          <div className="card lg:card-side text-primary-content bg-primary shadow-2xl">
+          <div
+            key={product.id}
+            className="card lg:card-side text-primary-content bg-primary shadow-2xl"
+          >
             <div className="card-body">
               <div className="flex items-center justify-between">
                 <p>{product.name}</p>

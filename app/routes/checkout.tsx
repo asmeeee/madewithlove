@@ -138,8 +138,8 @@ export default function CheckoutRoute() {
 
   return (
     <>
-      <header className="flex items-center justify-between">
-        <h1>
+      <header className="flex flex-col items-center justify-between space-y-4 md:flex-row md:space-y-0">
+        <h1 className="text-center md:text-left">
           Hey there, {user.name} - {user.email}!
         </h1>
 

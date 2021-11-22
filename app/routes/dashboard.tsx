@@ -48,8 +48,8 @@ export default function DashboardRoute() {
 
   return (
     <>
-      <header className="flex items-center justify-between">
-        <h1>Hey there, Sales Manager!</h1>
+      <header className="flex flex-col items-center justify-between space-y-4 md:flex-row md:space-y-0">
+        <h1 className="text-center md:text-left">Hey there, Sales Manager!</h1>
 
         <Link to="/" className="btn">
           Go back!
